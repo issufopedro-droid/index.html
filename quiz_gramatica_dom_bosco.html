@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#534AB7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Quiz Gramática">
+<title>Quiz de Gramática — EPC Dom Bosco</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --purple:#534AB7;--purple-dark:#3C3489;--purple-light:#EEEDFE;
+  --ok-bg:#EAF3DE;--ok-bd:#639922;--ok-tx:#27500A;
+  --err-bg:#FCEBEB;--err-bd:#E24B4A;--err-tx:#501313;
+  --bg:#f7f7f5;--card:#fff;--border:#e2e0d8;
+  --text:#1a1a1a;--text2:#6b6b6b;--text3:#aaa;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:520px;margin:0 auto;padding:14px 13px 50px}
+
+/* header */
+.app-header{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:13px 15px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.app-logo{width:42px;height:42px;border-radius:11px;background:var(--purple);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:22px}
+.app-title{font-size:15px;font-weight:600;color:var(--text);line-height:1.3}
+.app-sub{font-size:12px;color:var(--text2);margin-top:2px}
+
+/* stars */
+.stars-row{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.star{font-size:14px;color:#d3d1c7;transition:color .3s}
+.star.on{color:#BA7517}
+
+/* level pill + hearts */
+.lvl-header{display:flex;align-items:center;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.lvl-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-size:12px;font-weight:600}
+.hearts-row{display:flex;gap:4px;margin-left:auto}
+.heart{font-size:19px;color:#E24B4A;transition:color .2s}
+.heart.lost{color:#d3d1c7}
+
+/* progress */
+.counter{font-size:12px;color:var(--text2);margin-bottom:5px}
+.prog-bg{background:#e8e6df;border-radius:99px;height:7px;margin-bottom:14px}
+.prog-fill{border-radius:99px;height:7px;transition:width .45s cubic-bezier(.4,0,.2,1)}
+
+/* question card */
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px}
+.tip-badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:7px;margin-bottom:9px;font-weight:600}
+.qtxt{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.65}
+.blank{display:inline-block;border-bottom:2.5px solid currentColor;min-width:68px;text-align:center;font-weight:700;padding:0 4px}
+
+/* options */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.obtn{background:#f4f3ef;border:1.5px solid #e2e0d8;border-radius:10px;padding:11px 11px;font-size:13px;color:var(--text);cursor:pointer;text-align:left;transition:all .12s;font-family:inherit;line-height:1.35;width:100%}
+.obtn:active{transform:scale(.97)}
+.obtn.correct{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-tx);font-weight:600}
+.obtn.wrong{background:var(--err-bg);border-color:var(--err-bd);color:var(--err-tx)}
+.obtn.reveal{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-tx)}
+.obtn:disabled{cursor:default}
+
+/* feedback */
+.fb{margin-top:10px;padding:10px 13px;border-radius:9px;font-size:13px;line-height:1.55}
+.fb.correct{background:var(--ok-bg);color:var(--ok-tx);border:1px solid var(--ok-bd)}
+.fb.wrong{background:var(--err-bg);color:var(--err-tx);border:1px solid var(--err-bd)}
+
+/* nav button */
+.navrow{display:flex;justify-content:flex-end;margin-top:9px}
+.nbtn{border:none;border-radius:10px;padding:11px 20px;font-size:13px;font-weight:600;cursor:pointer;color:#fff;font-family:inherit;transition:opacity .15s}
+.nbtn:active{opacity:.83}
+
+/* panels (transition / fail / result) */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:22px;text-align:center}
+.panel-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px}
+.panel-sub{font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6}
+.lvl-map{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-bottom:16px}
+.lvl-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid transparent}
+.lvl-dot.done{background:var(--ok-bg);border-color:var(--ok-bd);color:var(--ok-tx)}
+.lvl-dot.active{background:var(--purple-light);border-color:var(--purple);color:var(--purple-dark)}
+.lvl-dot.locked{background:#f4f3ef;border-color:#d3d1c7;color:#aaa}
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.mbox{background:#f4f3ef;border-radius:9px;padding:10px 6px;text-align:center}
+.mval{font-size:21px;font-weight:700;color:var(--text)}
+.mlbl{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* fail panel */
+.fail-panel{background:var(--err-bg);border:1px solid var(--err-bd);border-radius:14px;padding:22px;text-align:center}
+.fail-title{font-size:18px;font-weight:700;color:var(--err-tx);margin-bottom:6px}
+.fail-sub{font-size:13px;color:#791F1F;margin-bottom:16px;line-height:1.6}
+.btn-row{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+
+/* result */
+.rcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px}
+.medal{width:82px;height:82px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;margin:0 auto 12px}
+.medal-num{font-size:27px;font-weight:700;line-height:1}
+.medal-lbl{font-size:11px;margin-top:3px}
+.final-title{text-align:center;font-size:16px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.4}
+.sgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
+.sbox{background:#f4f3ef;border-radius:9px;padding:8px 4px;text-align:center}
+.sval{font-size:15px;font-weight:700}
+.slbl{font-size:10px;color:var(--text2);margin-top:2px}
+.sec-lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin:12px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+.rlist{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+.ritem{display:flex;align-items:flex-start;gap:8px;font-size:12px;padding:8px 10px;border-radius:9px;line-height:1.45}
+.ritem.ok{background:var(--ok-bg);color:var(--ok-tx)}
+.ritem.nok{background:var(--err-bg);color:var(--err-tx)}
+.ric{flex-shrink:0;margin-top:1px;font-size:15px}
+.restart-btn{display:block;width:100%;margin-top:14px;background:var(--purple);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.restart-btn:active{opacity:.83}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="app-header">
+    <div class="app-logo">📚</div>
+    <div>
+      <div class="app-title">Quiz de Gramática — EPC Dom Bosco</div>
+      <div class="app-sub">Professor Issufo &nbsp;·&nbsp; 6ª e 7ª Classe</div>
+    </div>
+  </div>
+
+  <div id="quiz-screen">
+    <div class="stars-row" id="stars-row"></div>
+    <div class="lvl-header">
+      <div class="lvl-pill" id="lvl-pill"></div>
+      <div class="hearts-row" id="hearts-row"></div>
+    </div>
+    <div class="counter" id="counter"></div>
+    <div class="prog-bg"><div class="prog-fill" id="prog" style="width:0%"></div></div>
+    <div class="qcard">
+      <div id="tip-area"></div>
+      <div class="qtxt" id="qtxt"></div>
+      <div class="opts" id="opts"></div>
+      <div class="fb" id="fb" style="display:none"></div>
+    </div>
+    <div class="navrow"><button class="nbtn" id="nbtn" style="display:none" onclick="nextQ()">Próxima ›</button></div>
+  </div>
+
+  <div id="trans-screen" style="display:none"></div>
+  <div id="fail-screen" style="display:none"></div>
+  <div id="result-screen" style="display:none"></div>
+
+</div>
+<script>
+const LEVELS=[
+  {name:"Nível 1",sub:"Frases simples",color:"#534AB7",bg:"#EEEDFE",tc:"#3C3489",q:[
+    {s:"A Ana ___ no jardim.",o:["brinca","brincam","brincamos","brinquei"],a:0,e:'Sujeito singular "a Ana" → 3ª pessoa do singular: "brinca".'},
+    {s:"___ cão está a dormir.",o:["O","A","Um","Os"],a:0,e:'"Cão" é masculino singular → artigo definido "o".'},
+    {s:"A frase «Senta-te!» é ___.",o:["imperativa","exclamativa","interrogativa","declarativa"],a:0,e:'Exprime uma ordem → frase imperativa.'},
+    {s:"O plural de «livro» é ___.",o:["livros","livres","livrees","livroes"],a:0,e:'A maioria dos nomes forma o plural acrescentando "-s": livros.'},
+    {s:"«Que calor!» é uma frase ___.",o:["exclamativa","interrogativa","imperativa","negativa"],a:0,e:'Exprime emoção e termina com «!» → exclamativa.'},
+    {s:"O feminino de «professor» é ___.",o:["professora","professorinha","professoresa","professa"],a:0,e:'O feminino de "professor" forma-se substituindo "-or" por "-ora".'},
+    {s:"Quem realiza a ação na frase chama-se ___.",o:["sujeito","predicado","objeto","verbo"],a:0,e:'O sujeito é quem realiza ou sofre a ação na frase.'},
+    {s:"«Tens fome?» é uma frase ___.",o:["interrogativa","exclamativa","imperativa","afirmativa"],a:0,e:'Faz uma pergunta e termina com «?» → frase interrogativa.'}
+  ]},
+  {name:"Nível 2",sub:"Nomes e artigos",color:"#1D9E75",bg:"#E1F5EE",tc:"#085041",q:[
+    {s:"«Maputo» é um nome ___.",o:["próprio","comum","coletivo","composto"],a:0,e:'"Maputo" designa um lugar específico → nome próprio.'},
+    {s:"«Cardume» é o coletivo de ___.",o:["peixes","pássaros","abelhas","árvores"],a:0,e:'"Cardume" é o nome coletivo de peixes.'},
+    {s:"O artigo indefinido masculino singular é ___.",o:["um","uma","uns","o"],a:0,e:'Artigo indefinido masculino singular: "um".'},
+    {s:"«Casa» é um nome ___.",o:["comum","próprio","coletivo","composto"],a:0,e:'"Casa" designa qualquer casa sem especificar qual → nome comum.'},
+    {s:"O plural de «cidadão» é ___.",o:["cidadãos","cidadões","cidadaus","cidadaos"],a:0,e:'"Cidadão" → plural "cidadãos".'},
+    {s:"«Ramo» é o coletivo de ___.",o:["flores","frutos","folhas","sementes"],a:0,e:'"Ramo" é o coletivo de flores.'},
+    {s:"O artigo definido feminino plural é ___.",o:["as","os","umas","uma"],a:0,e:'Artigo definido feminino plural: "as".'},
+    {s:"«Autocarro» é uma palavra ___.",o:["composta","simples","derivada","primitiva"],a:0,e:'"Autocarro" é formada por dois elementos: auto + carro.'}
+  ]},
+  {name:"Nível 3",sub:"Adjetivos e advérbios",color:"#D85A30",bg:"#FAECE7",tc:"#712B13",q:[
+    {s:"«Bonito» é um ___.",o:["adjetivo","verbo","advérbio","nome"],a:0,e:'"Bonito" qualifica o nome → adjetivo.'},
+    {s:"O antónimo de «alegre» é ___.",o:["triste","contente","feliz","animado"],a:0,e:'O antónimo (significado oposto) de "alegre" é "triste".'},
+    {s:"«Rapidamente» é um advérbio de ___.",o:["modo","tempo","lugar","negação"],a:0,e:'Termina em "-mente" e indica como se faz → advérbio de modo.'},
+    {s:"O grau superlativo absoluto de «grande» é ___.",o:["grandíssimo","grandão","grandioso","muitíssimo"],a:0,e:'O superlativo absoluto sintético de "grande" é "grandíssimo".'},
+    {s:"Um sinónimo de «bonito» é ___.",o:["lindo","feio","alto","rápido"],a:0,e:'"Lindo" tem significado próximo de "bonito" → são sinónimos.'},
+    {s:"«Ontem» é um advérbio de ___.",o:["tempo","modo","lugar","quantidade"],a:0,e:'"Ontem" indica quando → advérbio de tempo.'},
+    {s:"O comparativo de superioridade de «alto» é ___.",o:["mais alto","altíssimo","tão alto","muito alto"],a:0,e:'Comparativo de superioridade: "mais alto (do que)".'},
+    {s:"«Aqui» é um advérbio de ___.",o:["lugar","modo","tempo","quantidade"],a:0,e:'"Aqui" indica onde → advérbio de lugar.'}
+  ]},
+  {name:"Nível 4",sub:"Verbos — presente e passado",color:"#BA7517",bg:"#FAEEDA",tc:"#633806",q:[
+    {s:"O verbo «ser» na 1ª pessoa singular do presente: ___.",o:["sou","és","é","somos"],a:0,e:'1ª pessoa singular do presente do indicativo de "ser": "sou".'},
+    {s:"«Nós ___ futebol ontem.» (jogar)",o:["jogámos","jogamos","jogávamos","jogaremos"],a:0,e:'"Ontem" indica passado → pretérito perfeito: "jogámos".'},
+    {s:"O imperfeito de «comer» na 3ª pessoa singular: ___.",o:["comia","comeu","come","comerá"],a:0,e:'Pretérito imperfeito do indicativo, 3ª pessoa singular: "comia".'},
+    {s:"O infinitivo do verbo «correu» é ___.",o:["correr","corre","corrido","correndo"],a:0,e:'A forma infinitiva de "correu" é "correr".'},
+    {s:"«Eu ___ cansado.» (estar — presente)",o:["estou","és","somos","estás"],a:0,e:'1ª pessoa singular do presente de "estar": "estou".'},
+    {s:"«Eles vieram cedo» está no ___.",o:["pretérito perfeito","presente","futuro","imperfeito"],a:0,e:'"Vieram" é pretérito perfeito do indicativo.'},
+    {s:"O gerúndio de «estudar» é ___.",o:["estudando","estudado","estudar","estuda"],a:0,e:'O gerúndio forma-se com "-ando" (1ª conjugação): estudando.'},
+    {s:"«Tu ___ a lição amanhã.» (aprender — futuro)",o:["aprenderás","aprendes","aprendeste","aprendias"],a:0,e:'Futuro do indicativo, 2ª pessoa singular: "aprenderás".'}
+  ]},
+  {name:"Nível 5",sub:"Pontuação e ortografia",color:"#185FA5",bg:"#E6F1FB",tc:"#0C447C",q:[
+    {s:"A vírgula usa-se para ___.",o:["separar elementos na frase","terminar a frase","indicar pergunta","iniciar discurso directo"],a:0,e:'A vírgula separa elementos da frase, como os itens de uma enumeração.'},
+    {s:"Qual a separação silábica de «escola»?",o:["es-co-la","e-sco-la","esc-o-la","e-sc-ola"],a:0,e:'"Escola" separa-se em: es-co-la (3 sílabas).'},
+    {s:"O ponto de interrogação usa-se em frases ___.",o:["interrogativas","imperativas","exclamativas","declarativas"],a:0,e:'O ponto de interrogação «?» termina frases interrogativas (perguntas).'},
+    {s:"Qual a palavra com acento correcto?",o:["música","musica","musíca","musîca"],a:0,e:'"Música" é esdrúxula (acento na antepenúltima sílaba): mú-si-ca.'},
+    {s:"O travessão «—» usa-se para ___.",o:["marcar fala no diálogo","separar sílabas","substituir vírgula","terminar parágrafo"],a:0,e:'O travessão marca o início da fala de cada personagem num diálogo.'},
+    {s:"Quantas sílabas tem «borboleta»?",o:["4","3","5","2"],a:0,e:'"Bor-bo-le-ta" tem 4 sílabas.'},
+    {s:"Os dois pontos «:» usam-se antes de ___.",o:["enumeração ou fala","final da frase","pausa longa","nova frase"],a:0,e:'Os dois pontos introduzem enumerações, explicações ou discurso directo.'},
+    {s:"Qual a palavra correctamente escrita?",o:["professor","profesoor","profesour","profesôr"],a:0,e:'A grafia correcta é "professor".'}
+  ]},
+  {name:"Nível 6",sub:"Tipos de texto",color:"#993556",bg:"#FBEAF0",tc:"#4B1528",q:[
+    {s:"Um texto que conta uma história com personagens é ___.",o:["narrativo","descritivo","informativo","instrucional"],a:0,e:'O texto narrativo conta eventos com personagens, tempo e espaço.'},
+    {s:"«Era uma vez...» é típico do início de um texto ___.",o:["narrativo","descritivo","argumentativo","informativo"],a:0,e:'A fórmula "era uma vez" é marca de abertura de textos narrativos.'},
+    {s:"Um texto que explica como fazer algo é ___.",o:["instrucional","narrativo","descritivo","poético"],a:0,e:'O texto instrucional (receitas, manuais) explica como realizar uma tarefa.'},
+    {s:"A estrutura de uma carta inclui ___.",o:["saudação, corpo e despedida","título, meio e fim","início, clímax e fim","introdução, nó e desenlace"],a:0,e:'Uma carta tem: saudação inicial, corpo (mensagem) e despedida.'},
+    {s:"O narrador que usa «eu» na história é ___.",o:["narrador-personagem","narrador omnisciente","narrador neutro","narrador externo"],a:0,e:'O narrador que participa na história e usa "eu" é narrador-personagem.'},
+    {s:"Um texto que descreve como é um lugar é ___.",o:["descritivo","narrativo","argumentativo","instrucional"],a:0,e:'O texto descritivo apresenta características de pessoas, lugares ou objectos.'},
+    {s:"A ideia mais importante de um parágrafo é a ideia ___.",o:["principal","secundária","acessória","complementar"],a:0,e:'A ideia principal é o pensamento central; as outras são secundárias.'},
+    {s:"Uma notícia responde a: quem, o quê, quando, onde e ___.",o:["como e porquê","quem e qual","onde e quando","o quê e quem"],a:0,e:'Uma notícia responde: quem, o quê, quando, onde, como e porquê.'}
+  ]},
+  {name:"Nível 7",sub:"Concordância verbal e nominal",color:"#0C447C",bg:"#E6F1FB",tc:"#042C53",q:[
+    {s:"«As crianças ___ muito.» (brincar)",o:["brincam","brinca","brinco","brincamos"],a:0,e:'Sujeito plural "as crianças" → 3ª pessoa plural: "brincam".'},
+    {s:"«A professora e os alunos ___ felizes.»",o:["estão","está","estamos","ficam"],a:0,e:'Sujeito composto → verbo no plural: "estão".'},
+    {s:"«Os rapazes chegaram ___.» (cansado)",o:["cansados","cansada","cansado","cansadas"],a:0,e:'O adjetivo concorda com "os rapazes" (masculino plural): "cansados".'},
+    {s:"«A maioria dos alunos ___ aprovada.»",o:["foi","foram","são","estavam"],a:0,e:'Com "a maioria de", o verbo pode concordar com o núcleo "maioria" (singular): "foi".'},
+    {s:"«As flores estão ___.» (bonito)",o:["bonitas","bonito","bonitos","bonitinhas"],a:0,e:'O adjetivo concorda com "as flores" (feminino plural): "bonitas".'},
+    {s:"«Nenhum dos alunos ___ a resposta.»",o:["sabia","sabiam","sabem","souberam"],a:0,e:'"Nenhum" é singular → verbo no singular: "sabia".'},
+    {s:"«Elas ___ muito trabalhadoras.»",o:["são","é","somos","estão"],a:0,e:'Sujeito plural "elas" → 3ª pessoa plural: "são".'},
+    {s:"«O livro e o caderno ___ na mesa.»",o:["estão","está","estamos","ficam"],a:0,e:'Dois sujeitos ligados por "e" → verbo no plural: "estão".'}
+  ]},
+  {name:"Nível 8",sub:"Verbos — modos e tempos avançados",color:"#3B6D11",bg:"#EAF3DE",tc:"#173404",q:[
+    {s:"«É preciso que tu ___ agora.» (partir)",o:["partas","partes","partirás","partiste"],a:0,e:'Após "é preciso que" usa-se o presente do subjuntivo: "partas".'},
+    {s:"«Embora ele ___, não passou.» (estudar)",o:["estudasse","estudou","estuda","estudaria"],a:0,e:'"Embora" exige o imperfeito do subjuntivo: "estudasse".'},
+    {s:"«Nós tínhamos chegado antes dela» é o ___.",o:["pretérito mais-que-perfeito","pretérito perfeito","futuro perfeito","presente"],a:0,e:'"Tínhamos chegado" é o pretérito mais-que-perfeito composto.'},
+    {s:"«Se eu ___ rico, ajudaria todos.» (ser)",o:["fosse","sou","seria","fui"],a:0,e:'Oração condicional com "se" exige o imperfeito do subjuntivo: "fosse".'},
+    {s:"«Quando ___ a Maputo, visita-me.» (vir)",o:["vieres","vens","vieste","virás"],a:0,e:'Com "quando" referindo ao futuro usa-se o futuro do subjuntivo: "vieres".'},
+    {s:"O mais-que-perfeito simples de «fazer», 3ª p. singular: ___.",o:["fizera","fez","faria","faça"],a:0,e:'Pretérito mais-que-perfeito simples de "fazer", 3ª pessoa singular: "fizera".'},
+    {s:"«Espero que eles ___ cedo.» (chegar)",o:["cheguem","chegam","chegaram","chegarão"],a:0,e:'Após "espero que" usa-se o presente do subjuntivo: "cheguem".'},
+    {s:"«Eu terei terminado antes das dez» é o ___.",o:["futuro perfeito","futuro simples","presente","mais-que-perfeito"],a:0,e:'"Terei terminado" é o futuro perfeito do indicativo.'}
+  ]},
+  {name:"Nível 9",sub:"Funções sintáticas",color:"#712B13",bg:"#FAECE7",tc:"#4A1B0C",q:[
+    {s:"Em «O Mateus leu o livro», «o livro» é o ___.",o:["complemento directo","sujeito","predicado","complemento indirecto"],a:0,e:'"O livro" é aquilo sobre que recai a ação diretamente → complemento directo.'},
+    {s:"Em «Dei flores à minha mãe», «à minha mãe» é o ___.",o:["complemento indirecto","complemento directo","sujeito","modificador"],a:0,e:'O complemento indirecto indica o destinatário da ação, precedido de preposição.'},
+    {s:"Em «A professora explica bem», «bem» é um ___.",o:["modificador","sujeito","predicado","complemento"],a:0,e:'"Bem" modifica o verbo indicando modo → modificador (advérbio de modo).'},
+    {s:"O predicado de «Os alunos estudam muito» é ___.",o:["estudam muito","os alunos","muito","estudam os alunos"],a:0,e:'O predicado é tudo o que se diz do sujeito: "estudam muito".'},
+    {s:"Em «O pai do aluno chegou», «do aluno» é um ___.",o:["modificador do nome","sujeito","predicado","complemento directo"],a:0,e:'"Do aluno" especifica o nome "pai" → modificador do nome.'},
+    {s:"Em «Ela parece cansada», «cansada» é o ___.",o:["predicativo do sujeito","complemento directo","modificador","sujeito"],a:0,e:'"Cansada" diz algo sobre o sujeito através do verbo copulativo → predicativo do sujeito.'},
+    {s:"Em «Ele telefonou-me», «me» é o ___.",o:["complemento indirecto","sujeito","complemento directo","modificador"],a:0,e:'O pronome "me" representa o destinatário da ação → complemento indirecto.'},
+    {s:"«O sol brilha» — sujeito e predicado são ___.",o:["«o sol» / «brilha»","«brilha» / «o sol»","«sol» / «o brilha»","«o» / «sol brilha»"],a:0,e:'Sujeito: "o sol" (quem realiza a ação); predicado: "brilha" (o que se diz).'}
+  ]},
+  {name:"Nível 10",sub:"Gramática avançada",color:"#4B1528",bg:"#FBEAF0",tc:"#4B1528",q:[
+    {s:"«Apesar de chover, saímos» — «apesar de chover» é oração ___.",o:["concessiva","causal","consecutiva","final"],a:0,e:'"Apesar de" introduz uma oração concessiva (admite um obstáculo).'},
+    {s:"«Correu tanto que caiu» — «que caiu» é oração ___.",o:["consecutiva","causal","concessiva","final"],a:0,e:'"Tanto que" introduz uma oração consecutiva (indica consequência).'},
+    {s:"«Vende-se casa» tem sujeito ___.",o:["indeterminado","determinado","nulo","composto"],a:0,e:'O pronome "se" indica sujeito indeterminado.'},
+    {s:"Em «O aluno cuja mochila é azul chegou», «cuja» é pronome ___.",o:["relativo","indefinido","pessoal","demonstrativo"],a:0,e:'"Cujo/cuja" é pronome relativo que indica posse e liga duas orações.'},
+    {s:"«Para que estudas?» — «para que» é conjunção ___.",o:["final","causal","concessiva","consecutiva"],a:0,e:'"Para que" introduz uma oração final (indica finalidade ou objetivo).'},
+    {s:"A voz passiva de «A Maria leu o livro» é ___.",o:["O livro foi lido pela Maria","A Maria foi lida pelo livro","O livro leu a Maria","A Maria leu-se o livro"],a:0,e:'Na voz passiva o objeto torna-se sujeito: "o livro foi lido pela Maria".'},
+    {s:"«Ele disse que viria» — o discurso é ___.",o:["indirecto","directo","misto","livre"],a:0,e:'O discurso indirecto relata as palavras de alguém sem aspas, integrado na frase.'},
+    {s:"A oração «porque estava cansado» é subordinada ___.",o:["causal","final","concessiva","temporal"],a:0,e:'"Porque" introduz a causa → oração subordinada causal.'}
+  ]}
+];
+
+const MAX_H=3;
+let lv=0,qi=0,hearts=MAX_H,scores=[],answers=[];
+const TOTAL=LEVELS.reduce((s,l)=>s+l.q.length,0);
+
+function lvc(){return LEVELS[lv];}
+function gIdx(){return LEVELS.slice(0,lv).reduce((s,l)=>s+l.q.length,0)+qi;}
+
+function rStars(){
+  const r=document.getElementById('stars-row');r.innerHTML='';
+  LEVELS.forEach((_,i)=>{const s=document.createElement('span');s.className='star'+(i<lv?' on':'');s.textContent='★';r.appendChild(s);});
+}
+
+function rHearts(){
+  const r=document.getElementById('hearts-row');r.innerHTML='';
+  for(let i=0;i<MAX_H;i++){const h=document.createElement('span');h.className='heart'+(i>=hearts?' lost':'');h.textContent='♥';r.appendChild(h);}
+}
+
+function loadQ(){
+  const c=lvc(),q=c.q[qi],gi=gIdx();
+  document.getElementById('lvl-pill').style.cssText='background:'+c.bg+';color:'+c.tc;
+  document.getElementById('lvl-pill').textContent='★ '+c.name+' — '+c.sub;
+  document.getElementById('nbtn').style.background=c.color;
+  document.getElementById('counter').textContent='Pergunta '+(gi+1)+' de '+TOTAL;
+  document.getElementById('prog').style.cssText='background:'+c.color+';width:'+((gi+1)/TOTAL*100)+'%';
+  document.getElementById('tip-area').innerHTML=q.tip?'<div class="tip-badge" style="background:'+c.bg+';color:'+c.tc+'">'+q.tip+'</div><br>':'';
+  document.getElementById('qtxt').innerHTML=q.s.replace('___','<span class="blank" style="color:'+c.color+';border-bottom-color:'+c.color+'">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+  const og=document.getElementById('opts');og.innerHTML='';
+  q.o.forEach((opt,i)=>{const b=document.createElement('button');b.className='obtn';b.textContent=opt;b.onclick=()=>pick(i);og.appendChild(b);});
+  document.getElementById('fb').style.display='none';
+  document.getElementById('nbtn').style.display='none';
+  rStars();rHearts();
+}
+
+function pick(i){
+  const q=lvc().q[qi];
+  document.querySelectorAll('.obtn').forEach(b=>b.disabled=true);
+  const fb=document.getElementById('fb');
+  const ok=i===q.a;
+  if(ok){
+    document.querySelectorAll('.obtn')[i].classList.add('correct');
+    fb.className='fb correct';fb.innerHTML='✓ Correcto! '+q.e;
+    scores[lv]=(scores[lv]||0)+1;
+  }else{
+    document.querySelectorAll('.obtn')[i].classList.add('wrong');
+    document.querySelectorAll('.obtn')[q.a].classList.add('reveal');
+    fb.className='fb wrong';fb.innerHTML='✗ Não está certo. A resposta correcta é "<strong>'+q.o[q.a]+'</strong>". '+q.e;
+    hearts--;rHearts();
+  }
+  answers[lv]=answers[lv]||[];
+  answers[lv].push({ok,s:q.s,chosen:q.o[i],correct:q.o[q.a]});
+  fb.style.display='block';
+  document.getElementById('nbtn').style.display='inline-block';
+}
+
+function nextQ(){
+  if(hearts<=0){showFail();return;}
+  qi++;
+  if(qi<lvc().q.length){loadQ();}
+  else if(lv<LEVELS.length-1){showTrans();}
+  else{showResult();}
+}
+
+function mapHTML(){
+  return LEVELS.map((_,i)=>{
+    const cls=i<lv?'done':i===lv?'active':'locked';
+    return '<div class="lvl-dot '+cls+'">'+(i+1)+'</div>';
+  }).join('');
+}
+
+function showTrans(){
+  document.getElementById('quiz-screen').style.display='none';
+  const c=lvc(),nc=LEVELS[lv+1],sc=scores[lv]||0;
+  document.getElementById('trans-screen').style.display='block';
+  document.getElementById('trans-screen').innerHTML=
+    '<div class="panel">'+
+    '<div style="font-size:38px;margin-bottom:10px;color:'+c.color+'">🏆</div>'+
+    '<div class="panel-title">'+c.name+' concluído!</div>'+
+    '<div class="panel-sub">Excelente! Avança para o <strong>'+nc.name+' — '+nc.sub+'</strong>.</div>'+
+    '<div class="lvl-map">'+mapHTML()+'</div>'+
+    '<div class="mgrid">'+
+      '<div class="mbox"><div class="mval">'+sc+'</div><div class="mlbl">acertos</div></div>'+
+      '<div class="mbox"><div class="mval">'+(c.q.length-sc)+'</div><div class="mlbl">erros</div></div>'+
+      '<div class="mbox"><div class="mval">'+hearts+'</div><div class="mlbl">vidas</div></div>'+
+    '</div>'+
+    '<button class="nbtn" style="background:'+nc.color+';width:100%;border-radius:10px;padding:12px" onclick="goNext()">Ir para o '+nc.name+' ›</button>'+
+    '</div>';
+}
+
+function goNext(){
+  lv++;qi=0;
+  document.getElementById('trans-screen').style.display='none';
+  document.getElementById('quiz-screen').style.display='block';
+  loadQ();
+}
+
+function showFail(){
+  document.getElementById('quiz-screen').style.display='none';
+  document.getElementById('fail-screen').style.display='block';
+  document.getElementById('fail-screen').innerHTML=
+    '<div class="fail-panel">'+
+    '<div style="font-size:38px;margin-bottom:10px">💔</div>'+
+    '<div class="fail-title">Perdeste todas as vidas!</div>'+
+    '<div class="fail-sub">Não desanimes! A prática leva à perfeição. Podes repetir este nível ou recomeçar.</div>'+
+    '<div class="btn-row">'+
+      '<button class="nbtn" style="background:#E24B4A;border-radius:10px;padding:11px 18px" onclick="retryLv()">↺ Repetir '+lvc().name+'</button>'+
+      '<button class="nbtn" style="background:#534AB7;border-radius:10px;padding:11px 18px" onclick="restart()">⌂ Recomeçar tudo</button>'+
+    '</div></div>';
+}
+
+function retryLv(){
+  qi=0;hearts=MAX_H;scores[lv]=0;answers[lv]=[];
+  document.getElementById('fail-screen').style.display='none';
+  document.getElementById('quiz-screen').style.display='block';
+  loadQ();
+}
+
+function showResult(){
+  document.getElementById('quiz-screen').style.display='none';
+  document.getElementById('result-screen').style.display='block';
+  const got=scores.reduce((s,v)=>s+(v||0),0);
+  const pct=Math.round(got/TOTAL*100);
+  const medal=pct>=80?{bg:'#FAEEDA',c:'#633806',t:'Excelente! Dominaste todos os 10 níveis! 🎉'}:
+    pct>=60?{bg:'#E6F1FB',c:'#0C447C',t:'Muito bom! Continua a praticar. 👍'}:
+    {bg:'#EAF3DE',c:'#27500A',t:'Bom esforço! Não desistas, pratica mais. 📚'};
+  const sboxes=LEVELS.map((l,i)=>
+    '<div class="sbox"><div class="sval" style="color:'+l.color+'">'+(scores[i]||0)+'/'+l.q.length+'</div><div class="slbl">N'+(i+1)+'</div></div>'
+  ).join('');
+  let revs='';
+  LEVELS.forEach((l,i)=>{
+    if(!answers[i]||!answers[i].length)return;
+    revs+='<div class="sec-lbl">'+l.name+' — '+l.sub+'</div><ul class="rlist">'+
+      answers[i].map((a,j)=>
+        '<li class="ritem '+(a.ok?'ok':'nok')+'">'+
+        '<span class="ric">'+(a.ok?'✓':'✗')+'</span>'+
+        '<div><strong>Q'+(j+1)+':</strong> '+a.s.replace('___','<strong>'+a.correct+'</strong>')+
+        (!a.ok?' <span style="opacity:.65">(escolheste: '+a.chosen+')</span>':'')+
+        '</div></li>'
+      ).join('')+'</ul>';
+  });
+  document.getElementById('result-screen').innerHTML=
+    '<div class="rcard">'+
+    '<div class="medal" style="background:'+medal.bg+'">'+
+      '<span class="medal-num" style="color:'+medal.c+'">'+got+'</span>'+
+      '<span class="medal-lbl" style="color:'+medal.c+'">acertos</span>'+
+    '</div>'+
+    '<div class="final-title">'+medal.t+'</div>'+
+    '<div class="sgrid">'+sboxes+'</div>'+
+    revs+
+    '<button class="restart-btn" onclick="restart()">↺ Recomeçar do início</button>'+
+    '</div>';
+}
+
+function restart(){
+  lv=0;qi=0;hearts=MAX_H;scores=[];answers=[];
+  ['trans-screen','fail-screen','result-screen'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('quiz-screen').style.display='block';
+  loadQ();
+}
+
+loadQ();
+</script>
+</body>
+</html>
