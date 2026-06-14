@@ -252,6 +252,26 @@ const TOTAL=LEVELS.reduce((s,l)=>s+l.q.length,0);
 function lvc(){return LEVELS[lv];}
 function gIdx(){return LEVELS.slice(0,lv).reduce((s,l)=>s+l.q.length,0)+qi;}
 
+// Embaralha as opções de cada pergunta mantendo a resposta correcta
+function shuffleOptions(q){
+  const correct=q.o[q.a];
+  const opts=[...q.o];
+  // Fisher-Yates shuffle
+  for(let i=opts.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [opts[i],opts[j]]=[opts[j],opts[i]];
+  }
+  return {o:opts, a:opts.indexOf(correct)};
+}
+
+// Pré-embaralha todas as perguntas ao iniciar
+let shuffled=[];
+function buildShuffled(){
+  shuffled=LEVELS.map(l=>l.q.map(q=>({...q,...shuffleOptions(q)})));
+}
+buildShuffled();
+function curQ(){return shuffled[lv][qi];}
+
 function rStars(){
   const r=document.getElementById('stars-row');r.innerHTML='';
   LEVELS.forEach((_,i)=>{const s=document.createElement('span');s.className='star'+(i<lv?' on':'');s.textContent='★';r.appendChild(s);});
@@ -263,7 +283,7 @@ function rHearts(){
 }
 
 function loadQ(){
-  const c=lvc(),q=c.q[qi],gi=gIdx();
+  const c=lvc(),q=curQ(),gi=gIdx();
   document.getElementById('lvl-pill').style.cssText='background:'+c.bg+';color:'+c.tc;
   document.getElementById('lvl-pill').textContent='★ '+c.name+' — '+c.sub;
   document.getElementById('nbtn').style.background=c.color;
@@ -279,7 +299,7 @@ function loadQ(){
 }
 
 function pick(i){
-  const q=lvc().q[qi];
+  const q=curQ();
   document.querySelectorAll('.obtn').forEach(b=>b.disabled=true);
   const fb=document.getElementById('fb');
   const ok=i===q.a;
@@ -356,6 +376,7 @@ function showFail(){
 
 function retryLv(){
   qi=0;hearts=MAX_H;scores[lv]=0;answers[lv]=[];
+  shuffled[lv]=LEVELS[lv].q.map(q=>({...q,...shuffleOptions(q)}));
   document.getElementById('fail-screen').style.display='none';
   document.getElementById('quiz-screen').style.display='block';
   loadQ();
@@ -398,7 +419,7 @@ function showResult(){
 }
 
 function restart(){
-  lv=0;qi=0;hearts=MAX_H;scores=[];answers=[];
+  lv=0;qi=0;hearts=MAX_H;scores=[];answers=[];buildShuffled();
   ['trans-screen','fail-screen','result-screen'].forEach(id=>document.getElementById(id).style.display='none');
   document.getElementById('quiz-screen').style.display='block';
   loadQ();
